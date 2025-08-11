@@ -75,8 +75,8 @@ if __name__ == "__main__":
 
     # 轨迹记录相关
     tracking = False
-    ball_tracks = {'red_ball': [], 'green_ball': [], 'blue_ball': []}
-    ball_tracks_another = {'red_ball': [], 'green_ball': [], 'blue_ball': []}
+    ball_tracks1 = {'red_ball': [], 'green_ball': [], 'blue_ball': []}
+    ball_tracks2 = {'red_ball': [], 'green_ball': [], 'blue_ball': []}
     print("按 s 开始/暂停追踪，按 q 退出并保存轨迹")
 
     while True:
@@ -87,8 +87,8 @@ if __name__ == "__main__":
 
         # 追踪并记录轨迹
         if tracking:
-            update_ball_tracks(ball_tracks, det0)
-            update_ball_tracks(ball_tracks_another, det1)
+            update_ball_tracks(ball_tracks1, det0)
+            update_ball_tracks(ball_tracks2, det1)
 
         # 显示
         cv2.imshow('cam0', processed0)
@@ -102,6 +102,7 @@ if __name__ == "__main__":
             print("退出程序，保存轨迹...")
             break
 
-    save_ball_tracks(ball_tracks,'.',1)
-    save_ball_tracks(ball_tracks_another,'.',2)
+    trace_save_dir = ".\\traces"
+    save_ball_tracks(ball_tracks1,trace_save_dir,1)
+    save_ball_tracks(ball_tracks2,trace_save_dir,2)
     cv2.destroyAllWindows()

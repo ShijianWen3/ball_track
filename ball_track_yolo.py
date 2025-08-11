@@ -483,7 +483,7 @@ def main():
         test_on_video(args.model, args.source, args.output, args.device)
 
 
-def save_ball_tracks(tracks_dict, out_dir=".",suffix:int = 1):
+def save_ball_tracks(tracks_dict, out_dir=".\\traces",suffix:int = 1):
     """
     保存球轨迹到txt文件，tracks_dict: {class_name: [(x, y), ...]}
     """
