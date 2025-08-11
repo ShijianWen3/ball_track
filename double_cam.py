@@ -12,8 +12,8 @@ global variable
 thread_running_event = threading.Event()
 
 # 摄像头帧队列
-frame_queue_0 = queue.Queue(maxsize=1)
-frame_queue_1 = queue.Queue(maxsize=1)
+frame_queue_0 = queue.Queue(maxsize=5)
+frame_queue_1 = queue.Queue(maxsize=5)
 
 # 摄像头采集线程
 
