@@ -483,12 +483,12 @@ def main():
         test_on_video(args.model, args.source, args.output, args.device)
 
 
-def save_ball_tracks(tracks_dict, out_dir="."):
+def save_ball_tracks(tracks_dict, out_dir=".",suffix:int = 1):
     """
     保存球轨迹到txt文件，tracks_dict: {class_name: [(x, y), ...]}
     """
     for cname, points in tracks_dict.items():
-        fname = os.path.join(out_dir, f"{cname}.txt")
+        fname = os.path.join(out_dir, f"{cname}_{suffix}.txt")
         with open(fname, "w") as f:
             for x, y in points:
                 f.write(f"{x},{y}\n")

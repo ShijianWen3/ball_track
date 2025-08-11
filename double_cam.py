@@ -12,15 +12,15 @@ global variable
 thread_running_event = threading.Event()
 
 # 摄像头帧队列
-frame_queue_0 = queue.Queue(maxsize=2)
-frame_queue_1 = queue.Queue(maxsize=2)
+frame_queue_0 = queue.Queue(maxsize=1)
+frame_queue_1 = queue.Queue(maxsize=1)
 
 # 摄像头采集线程
 
 def cam_reader(cam_id, frame_queue, thread_running_event:threading.Event):
     cap = cv2.VideoCapture(cam_id)
      # 摄像头优化设置
-    cap.set(cv2.CAP_PROP_BUFFERSIZE, cam_id)  # 减少缓冲延迟
+    cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)  # 减少缓冲延迟
 
     if not cap.isOpened():
         print(f"无法打开摄像头{cam_id}")
@@ -42,7 +42,7 @@ def cam_reader(cam_id, frame_queue, thread_running_event:threading.Event):
 
 if __name__ == "__main__":
 
-    modle_path = "ball.pt"
+    modle_path = "ballv1.2.pt"
 
     print("🚀 RGB球追踪模型测试-双摄像头同步")
     print("=" * 50)
@@ -70,23 +70,25 @@ if __name__ == "__main__":
     t1.start()
 
     # 加载YOLO模型
-    tracker = RGBBallTracker(modle_path)
+    tracker1 = RGBBallTracker(modle_path)
+    tracker2 = RGBBallTracker(modle_path)
 
     # 轨迹记录相关
     tracking = False
     ball_tracks = {'red_ball': [], 'green_ball': [], 'blue_ball': []}
+    ball_tracks_another = {'red_ball': [], 'green_ball': [], 'blue_ball': []}
     print("按 s 开始/暂停追踪，按 q 退出并保存轨迹")
 
     while True:
         frame0 = frame_queue_0.get()
         frame1 = frame_queue_1.get()
-        processed0, det0 = tracker.process_frame(frame0, isPrintInfo=isPrintInfo)
-        processed1, det1 = tracker.process_frame(frame1, isPrintInfo=isPrintInfo)
+        processed0, det0 = tracker1.process_frame(frame0, isPrintInfo=isPrintInfo)
+        processed1, det1 = tracker2.process_frame(frame1, isPrintInfo=isPrintInfo)
 
         # 追踪并记录轨迹
         if tracking:
             update_ball_tracks(ball_tracks, det0)
-            update_ball_tracks(ball_tracks, det1)
+            update_ball_tracks(ball_tracks_another, det1)
 
         # 显示
         cv2.imshow('cam0', processed0)
@@ -100,5 +102,6 @@ if __name__ == "__main__":
             print("退出程序，保存轨迹...")
             break
 
-    save_ball_tracks(ball_tracks)
+    save_ball_tracks(ball_tracks,'.',1)
+    save_ball_tracks(ball_tracks_another,'.',2)
     cv2.destroyAllWindows()

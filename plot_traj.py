@@ -1,10 +1,10 @@
 import matplotlib.pyplot as plt
 import os
 
-def load_ball_tracks(track_dir="."):
+def load_ball_tracks(track_dir=".",suffix:int = 1):
     tracks = {}
     for cname in ["red_ball", "green_ball", "blue_ball"]:
-        fname = os.path.join(track_dir, f"{cname}.txt")
+        fname = os.path.join(track_dir, f"{cname}_{suffix}.txt")
         points = []
         if os.path.exists(fname):
             with open(fname, "r") as f:
@@ -30,4 +30,6 @@ def plot_ball_tracks(tracks):
 
 if __name__ == "__main__":
     tracks = load_ball_tracks()
+    tracks_another = load_ball_tracks('.',2)
     plot_ball_tracks(tracks)
+    plot_ball_tracks(tracks_another)
