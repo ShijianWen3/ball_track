@@ -1,0 +1,16 @@
+.vscode/
+__pycache__/
+build/
+captured_videos/
+dataset/
+dataset_ball_v8/
+dataset_ball_v8_v1.1/
+model_ballv1.0/
+*.zip
+*.txt
+!CMakeLists.txt
+*.pt
+
+
+
+
