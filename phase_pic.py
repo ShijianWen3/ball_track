@@ -1,33 +1,114 @@
-
-
-
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-import os
 import numpy as np
+import matplotlib.pyplot as plt
+from scipy.interpolate import CubicSpline
+from plot_traj import load_ball_tracks, merge_3d_tracks
+def interpolate_data(tracks_3d, new_sampling_rate=10):
+    """对数据进行插值处理，提高采样率"""
+    interpolated_tracks = {}
+    
+    for cname, points in tracks_3d.items():
+        if not points:
+            continue
+        
+        # 分别提取 x, y, z 坐标
+        xs, ys, zs = zip(*points)
+        
+        # 假设原始数据的时间间隔是均匀的，可以用时间索引代替时间戳
+        t_original = np.arange(len(xs))  # 原始时间索引
+        t_new = np.linspace(0, len(xs)-1, len(xs) * new_sampling_rate)  # 插值后的时间索引
+        
+        # 使用样条插值进行数据插值
+        cs_x = CubicSpline(t_original, xs)
+        cs_y = CubicSpline(t_original, ys)
+        cs_z = CubicSpline(t_original, zs)
+        
+        # 获取插值后的数据
+        xs_new = cs_x(t_new)
+        ys_new = cs_y(t_new)
+        zs_new = cs_z(t_new)
+        
+        # 存储插值后的数据
+        interpolated_tracks[cname] = list(zip(xs_new, ys_new, zs_new))
+    
+    return interpolated_tracks
 
-def load_ball_tracks(track_dir=".\\traces", suffix:int = 1):
-    tracks = {}
-    for cname in ["red_ball", "green_ball", "blue_ball"]:
-        fname = os.path.join(track_dir, f"{cname}_{suffix}.txt")
-        points = []
-        if os.path.exists(fname):
-            with open(fname, "r") as f:
-                for line in f:
-                    x, y = map(int, line.strip().split(","))
-                    points.append((x, y))
-        tracks[cname] = points
-    return tracks
+def plot_interpolated_3d(tracks_3d, cname="red_ball"):
+    """绘制插值后的三维轨迹"""
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    
+    if cname in tracks_3d:
+        xs, ys, zs = zip(*tracks_3d[cname])
+        ax.plot(xs, ys, zs, label=cname)
+    
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+    ax.set_zlabel('Z')
+    ax.legend()
+    plt.title(f"Interpolated 3D Trajectory: {cname}")
 
-def merge_3d_tracks(tracks1, tracks2):
-    tracks_3d = {}
-    for cname in ["red_ball", "green_ball", "blue_ball"]:
-        pts1 = tracks1.get(cname, [])
-        pts2 = tracks2.get(cname, [])
-        n = min(len(pts1), len(pts2))
-        points_3d = [(pts1[i][0], pts1[i][1], pts2[i][0]) for i in range(n)]
-        tracks_3d[cname] = points_3d
-    return tracks_3d
+def plot_phase_space_interpolated(angles, velocities, cname="red_ball"):
+    """绘制插值后的相空间图：角度 vs 角速度"""
+    theta, phi = angles[cname]
+    omega_theta, omega_phi = velocities[cname]
+    
+    plt.figure(figsize=(8, 6))
+    plt.plot(theta, omega_theta, '.', markersize=1, label=f'{cname} - θ vs ω_θ')
+    plt.xlabel('θ (Angle)')
+    plt.ylabel('ω_θ (Angular Velocity)')
+    plt.title(f"Phase Space: {cname}")
+    plt.legend()
+
+def plot_delay_embedding_interpolated(angles, cname="red_ball", tau=1, m=9):
+    """绘制插值后的延迟嵌入图"""
+    theta, phi = angles[cname]
+    T = len(theta) - (m-1)*tau
+    emb = np.zeros((T, m))
+    for i in range(m):
+        emb[:, i] = theta[i*tau : i*tau + T]
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    ax.plot(emb[:,0], emb[:,1], emb[:,2], lw=0.5)
+    ax.set_xlabel('θ(t)')
+    ax.set_ylabel(f'θ(t+{tau})')
+    ax.set_zlabel(f'θ(t+{2*tau})')
+    plt.title(f'Delay Embedding (3D): {cname}')
+
+def plot_poincare_section_interpolated(angles, velocities, cname="red_ball"):
+    """绘制插值后的Poincaré截面图"""
+    theta, phi = angles[cname]
+    omega_theta, omega_phi = velocities[cname]
+    
+    cross_idx = np.where((theta[:-1] < 5) & (theta[1:] >= -5))[0]
+    
+    if len(cross_idx) == 0:
+        print(f"未检测到过零点：{cname}")
+        return  # 如果没有过零点，则直接退出
+    
+    # 用插值精确找到过零点
+    poincare_theta = []
+    poincare_omega = []
+    
+    for idx in cross_idx:
+        # 线性插值计算过零点位置
+        t1, t2 = theta[idx], theta[idx + 1]
+        dt1, dt2 = omega_theta[idx], omega_theta[idx + 1]
+        
+        # 线性插值过零点
+        zero_cross_theta = t1 - t2 / (dt2 - dt1) * (t2 - t1)
+        zero_cross_omega = dt1 + (zero_cross_theta - t1) * (dt2 - dt1) / (t2 - t1)
+        
+        poincare_theta.append(zero_cross_theta)
+        poincare_omega.append(zero_cross_omega)
+    
+    # 绘制Poincaré截面图
+    plt.figure(figsize=(8, 6))
+    plt.plot(poincare_theta, poincare_omega, '.', markersize=2)
+    plt.xlabel('θ (Angle) at section')
+    plt.ylabel('ω (Angular Velocity) at section')
+    plt.title(f'Poincaré Section: {cname}')
+    plt.grid(True)
 
 def central_diff(x, dt):
     """计算中心差分的角速度"""
@@ -59,68 +140,23 @@ def calculate_angles_and_velocities(tracks_3d, dt):
     
     return angles, velocities
 
-def plot_phase_space(angles, velocities, cname="red_ball"):
-    """绘制相空间图：角度 vs 角速度"""
-    theta, phi = angles[cname]
-    omega_theta, omega_phi = velocities[cname]
-    
-    plt.figure(figsize=(8, 6))
-    
-    # 可以绘制 (theta1, omega_theta1) 或者 (theta1, theta2)
-    plt.plot(theta, omega_theta, '.', markersize=1, label=f'{cname} - θ vs ω_θ')
-    
-    plt.xlabel('θ (Angle)')
-    plt.ylabel('ω_θ (Angular Velocity)')
-    plt.title(f"Phase Space: {cname}")
-    plt.legend()
-
-def plot_delay_embedding(angles, cname="red_ball", tau=1, m=3):
-    """绘制延迟嵌入图，选择一个角度序列进行延迟嵌入"""
-    theta, phi = angles[cname]
-    T = len(theta) - (m-1)*tau
-    emb = np.zeros((T, m))
-    for i in range(m):
-        emb[:, i] = theta[i*tau : i*tau + T]
-
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
-    ax.plot(emb[:,0], emb[:,1], emb[:,2], lw=0.5)
-    ax.set_xlabel('θ(t)')
-    ax.set_ylabel(f'θ(t+{tau})')
-    ax.set_zlabel(f'θ(t+{2*tau})')
-    plt.title(f'Delay Embedding (3D): {cname}')
-
-def plot_poincare_section(angles, velocities, cname="red_ball"):
-    """绘制Poincaré截面：根据某个角度的过零点（例如θ3）"""
-    theta, phi = angles[cname]
-    omega_theta, omega_phi = velocities[cname]
-    
-    cross_idx = np.where((theta[:-1] < 0) & (theta[1:] >= 0))[0]
-    poincare_theta = theta[cross_idx]
-    poincare_omega = omega_theta[cross_idx]
-
-    plt.figure(figsize=(8, 6))
-    plt.plot(poincare_theta, poincare_omega, '.', markersize=2)
-    plt.xlabel('θ at section')
-    plt.ylabel('ω at section')
-    plt.title(f'Poincaré Section: {cname}')
-    plt.show()
-
 if __name__ == "__main__":
     track_dir = ".\\traces"
     tracks1 = load_ball_tracks(track_dir, 1)
     tracks2 = load_ball_tracks(track_dir, 2)
 
+    # 合并两个轨迹
     tracks_3d = merge_3d_tracks(tracks1, tracks2)
-    dt = 0.1  # 假设时间间隔为0.1秒，可以根据实际数据调整
     
-    # 计算角度和角速度
-    angles, velocities = calculate_angles_and_velocities(tracks_3d, dt)
+    # 插值处理
+    interpolated_tracks_3d = interpolate_data(tracks_3d, new_sampling_rate=10)  # 将采样率提高10倍
     
-    # 绘制相空间图、延迟嵌入和Poincaré截面
+    
+    # 绘制插值后的相空间图和其他可视化
+    angles, velocities = calculate_angles_and_velocities(interpolated_tracks_3d, dt=1/60)  # 采样率为60Hz
     for cname in ["red_ball", "green_ball", "blue_ball"]:
-        plot_phase_space(angles, velocities, cname)
-        plot_delay_embedding(angles, cname, tau=1, m=3)
-        plot_poincare_section(angles, velocities, cname)
+        plot_phase_space_interpolated(angles, velocities, cname)
+        plot_delay_embedding_interpolated(angles, cname, tau=1, m=3)
+        plot_poincare_section_interpolated(angles, velocities, cname)
     
     plt.show()
