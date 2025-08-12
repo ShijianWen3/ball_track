@@ -62,6 +62,8 @@ def plot_phase_space_interpolated(angles, velocities, cname="red_ball"):
 def plot_delay_embedding_interpolated(angles, cname="red_ball", tau=1, m=9):
     """绘制插值后的延迟嵌入图"""
     theta, phi = angles[cname]
+    # phi, theta = angles[cname]
+
     T = len(theta) - (m-1)*tau
     emb = np.zeros((T, m))
     for i in range(m):
@@ -80,7 +82,7 @@ def plot_poincare_section_interpolated(angles, velocities, cname="red_ball"):
     theta, phi = angles[cname]
     omega_theta, omega_phi = velocities[cname]
     
-    cross_idx = np.where((theta[:-1] < 5) & (theta[1:] >= -5))[0]
+    cross_idx = np.where((theta[:-1] < 0.1) & (theta[1:] >= -0.1))[0]
     
     if len(cross_idx) == 0:
         print(f"未检测到过零点：{cname}")
@@ -138,6 +140,7 @@ def calculate_angles_and_velocities(tracks_3d, dt):
         angles[cname] = (theta, phi)
         velocities[cname] = (omega_theta, omega_phi)
     
+
     return angles, velocities
 
 if __name__ == "__main__":
@@ -149,14 +152,15 @@ if __name__ == "__main__":
     tracks_3d = merge_3d_tracks(tracks1, tracks2)
     
     # 插值处理
-    interpolated_tracks_3d = interpolate_data(tracks_3d, new_sampling_rate=10)  # 将采样率提高10倍
+    # interpolated_tracks_3d = interpolate_data(tracks_3d, new_sampling_rate=10)  # 将采样率提高10倍
+    interpolated_tracks_3d = tracks_3d
     
     
     # 绘制插值后的相空间图和其他可视化
     angles, velocities = calculate_angles_and_velocities(interpolated_tracks_3d, dt=1/60)  # 采样率为60Hz
     for cname in ["red_ball", "green_ball", "blue_ball"]:
         plot_phase_space_interpolated(angles, velocities, cname)
-        plot_delay_embedding_interpolated(angles, cname, tau=1, m=3)
+        plot_delay_embedding_interpolated(angles, cname, tau=1, m=10)
         plot_poincare_section_interpolated(angles, velocities, cname)
     
     plt.show()

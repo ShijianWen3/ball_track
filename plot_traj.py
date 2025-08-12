@@ -62,6 +62,7 @@ if __name__ == "__main__":
     plot_ball_tracks(tracks2, 2)
     
     tracks_3d = merge_3d_tracks(tracks1, tracks2)
+    print(tracks_3d)
     for cname in ["red_ball", "green_ball", "blue_ball"]:
         plot_single_ball_3d(tracks_3d[cname], cname)
 
