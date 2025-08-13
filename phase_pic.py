@@ -1,7 +1,8 @@
-import numpy as np
 import matplotlib.pyplot as plt
 from scipy.interpolate import CubicSpline
 from plot_traj import load_ball_tracks, merge_3d_tracks
+import numpy as np
+from scipy.signal import savgol_filter
 def interpolate_data(tracks_3d, new_sampling_rate=10):
     """对数据进行插值处理，提高采样率"""
     interpolated_tracks = {}
@@ -32,6 +33,33 @@ def interpolate_data(tracks_3d, new_sampling_rate=10):
     
     return interpolated_tracks
 
+
+
+
+
+def filter_and_normalize_tracks(tracks_3d, window_length=11, polyorder=3):
+    """对每个球的x, y, z序列进行Savitzky-Golay滤波和归一化"""
+    filtered_tracks = {}
+    for cname, points in tracks_3d.items():
+        if not points:
+            continue
+        xs, ys, zs = zip(*points)
+        xs = np.array(xs)
+        ys = np.array(ys)
+        zs = np.array(zs)
+        # 滤波
+        if len(xs) >= window_length:
+            xs_f = savgol_filter(xs, window_length, polyorder)
+            ys_f = savgol_filter(ys, window_length, polyorder)
+            zs_f = savgol_filter(zs, window_length, polyorder)
+        else:
+            xs_f, ys_f, zs_f = xs, ys, zs
+        # 归一化
+        xs_f = (xs_f - np.mean(xs_f)) / np.std(xs_f) if np.std(xs_f) > 0 else xs_f
+        ys_f = (ys_f - np.mean(ys_f)) / np.std(ys_f) if np.std(ys_f) > 0 else ys_f
+        zs_f = (zs_f - np.mean(zs_f)) / np.std(zs_f) if np.std(zs_f) > 0 else zs_f
+        filtered_tracks[cname] = list(zip(xs_f, ys_f, zs_f))
+    return filtered_tracks
 def plot_interpolated_3d(tracks_3d, cname="red_ball"):
     """绘制插值后的三维轨迹"""
     fig = plt.figure()
@@ -120,47 +148,45 @@ def central_diff(x, dt):
     dx[-1] = (x[-1] - x[-2]) / dt
     return dx
 
-def calculate_angles_and_velocities(tracks_3d, dt):
-    """计算三维轨迹对应的角度和角速度"""
+
+def calculate_angles_and_velocities(tracks_3d, dt, normalize=True):
+    """计算三维轨迹对应的角度和角速度，并可选归一化"""
     angles = {"red_ball": [], "green_ball": [], "blue_ball": []}
     velocities = {"red_ball": [], "green_ball": [], "blue_ball": []}
-    
     for cname in tracks_3d:
-        # 从3D数据中提取角度与角速度
         xs, ys, zs = zip(*tracks_3d[cname])
-        
-        # 计算方位角和俯仰角
+        xs = np.array(xs)
+        ys = np.array(ys)
+        zs = np.array(zs)
         phi = np.arctan2(ys, xs)
-        theta = np.arctan2(zs, np.sqrt(np.array(xs)**2 + np.array(ys)**2))
-        
-        # 计算角速度
+        theta = np.arctan2(zs, np.sqrt(xs**2 + ys**2))
         omega_phi = central_diff(phi, dt)
         omega_theta = central_diff(theta, dt)
-        
+        if normalize:
+            theta = (theta - np.mean(theta)) / np.std(theta) if np.std(theta) > 0 else theta
+            phi = (phi - np.mean(phi)) / np.std(phi) if np.std(phi) > 0 else phi
+            omega_theta = (omega_theta - np.mean(omega_theta)) / np.std(omega_theta) if np.std(omega_theta) > 0 else omega_theta
+            omega_phi = (omega_phi - np.mean(omega_phi)) / np.std(omega_phi) if np.std(omega_phi) > 0 else omega_phi
         angles[cname] = (theta, phi)
         velocities[cname] = (omega_theta, omega_phi)
-    
-
     return angles, velocities
+
 
 if __name__ == "__main__":
     track_dir = ".\\traces"
     tracks1 = load_ball_tracks(track_dir, 1)
     tracks2 = load_ball_tracks(track_dir, 2)
-
     # 合并两个轨迹
     tracks_3d = merge_3d_tracks(tracks1, tracks2)
-    
-    # 插值处理
-    # interpolated_tracks_3d = interpolate_data(tracks_3d, new_sampling_rate=10)  # 将采样率提高10倍
-    interpolated_tracks_3d = tracks_3d
-    
-    
-    # 绘制插值后的相空间图和其他可视化
-    angles, velocities = calculate_angles_and_velocities(interpolated_tracks_3d, dt=1/60)  # 采样率为60Hz
+    # 滤波+归一化
+    filtered_tracks_3d = filter_and_normalize_tracks(tracks_3d, window_length=19, polyorder=6)
+    # 插值处理（如需）
+    processed_tracks_3d = interpolate_data(filtered_tracks_3d, new_sampling_rate=10)
+    # processed_tracks_3d = filtered_tracks_3d
+    # 计算角度和角速度（含归一化）
+    angles, velocities = calculate_angles_and_velocities(processed_tracks_3d, dt=1/600, normalize=True)
     for cname in ["red_ball", "green_ball", "blue_ball"]:
         plot_phase_space_interpolated(angles, velocities, cname)
-        plot_delay_embedding_interpolated(angles, cname, tau=1, m=10)
+        plot_delay_embedding_interpolated(angles, cname, tau=5, m=10)
         plot_poincare_section_interpolated(angles, velocities, cname)
-    
     plt.show()

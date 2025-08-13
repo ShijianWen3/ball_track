@@ -27,8 +27,29 @@ while True:
         cv2.line(frame, (frame_width // 2, 0), (frame_width // 2, frame_height), (255, 0, 0), 1)  # 蓝色中垂线
 
         # 绘制对角线（绿色）
-        cv2.line(frame, (0, 0), (frame_width, frame_height), (0, 255, 0), 1)  # 绿色左上到右下对角线
-        cv2.line(frame, (0, frame_height), (frame_width, 0), (0, 255, 0), 1)  # 绿色左下到右上对角线
+        # 绘制左上到右下的绿色虚线对角线
+        num_dashes = 30
+        for i in range(num_dashes):
+            start_frac = i / num_dashes
+            end_frac = (i + 0.5) / num_dashes
+            if end_frac > 1:
+                end_frac = 1
+            x1 = int(frame_width * start_frac)
+            y1 = int(frame_height * start_frac)
+            x2 = int(frame_width * end_frac)
+            y2 = int(frame_height * end_frac)
+            cv2.line(frame, (x1, y1), (x2, y2), (0, 255, 0), 1)  # 绿色虚线
+        # 绘制左下到右上的绿色虚线对角线
+        for i in range(num_dashes):
+            start_frac = i / num_dashes
+            end_frac = (i + 0.5) / num_dashes
+            if end_frac > 1:
+                end_frac = 1
+            x1 = int(frame_width * start_frac)
+            y1 = int(frame_height * (1 - start_frac))
+            x2 = int(frame_width * end_frac)
+            y2 = int(frame_height * (1 - end_frac))
+            cv2.line(frame, (x1, y1), (x2, y2), (0, 255, 0), 1)  # 绿色虚线
 
     # 显示图像
     cv2.imshow('Camera Calibration', frame)

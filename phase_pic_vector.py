@@ -2,6 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.interpolate import CubicSpline
 from plot_traj import load_ball_tracks, merge_3d_tracks
+import numpy as np
+from scipy.signal import savgol_filter
 
 def interpolate_data(tracks_3d, new_sampling_rate=10):
     """对数据进行插值处理，提高采样率"""
@@ -137,7 +139,7 @@ def central_diff(x, dt):
     dx[-1] = (x[-1] - x[-2]) / dt
     return dx
 
-def calculate_angles_and_velocities(tracks_3d, dt):
+def calculate_angles_and_velocities(tracks_3d, dt, normalize:bool=True):
     """计算三维轨迹对应的角度和角速度"""
     angles = {}
     velocities = {}
@@ -187,17 +189,27 @@ def calculate_angles_and_velocities(tracks_3d, dt):
     # 计算连线向量的角度
     phi_vector1 = np.arctan2(ys1, xs1)  # 连线向量的方位角
     theta_vector1 = np.arctan2(zs1, np.sqrt(xs1**2 + ys1**2))  # 连线向量的俯仰角
-
-    # 计算连线向量的角度
-    phi_vector2 = np.arctan2(ys2, xs2)  # 连线向量的方位角
-    theta_vector2 = np.arctan2(zs2, np.sqrt(xs2**2 + ys2**2))  # 连线向量的俯仰角
-    
     # 计算连线向量的角速度
     omega_phi_vector1 = central_diff(phi_vector1, dt)
     omega_theta_vector1 = central_diff(theta_vector1, dt)
 
+    if normalize:
+        theta_vector1 = (theta_vector1 - np.mean(theta_vector1)) / np.std(theta_vector1) if np.std(theta_vector1) > 0 else theta_vector1
+        phi_vector1 = (phi_vector1 - np.mean(phi_vector1)) / np.std(phi_vector1) if np.std(phi_vector1) > 0 else phi_vector1
+        omega_theta_vector1 = (omega_theta_vector1 - np.mean(omega_theta_vector1)) / np.std(omega_theta_vector1) if np.std(omega_theta_vector1) > 0 else omega_theta_vector1
+        omega_phi_vector1 = (omega_phi_vector1 - np.mean(omega_phi_vector1)) / np.std(omega_phi_vector1) if np.std(omega_phi_vector1) > 0 else omega_phi_vector1  
+
+    # 计算连线向量的角度
+    phi_vector2 = np.arctan2(ys2, xs2)  # 连线向量的方位角
+    theta_vector2 = np.arctan2(zs2, np.sqrt(xs2**2 + ys2**2))  # 连线向量的俯仰角
     omega_phi_vector2 = central_diff(phi_vector2, dt)
     omega_theta_vector2 = central_diff(theta_vector2, dt)
+
+    if normalize:
+        theta_vector2 = (theta_vector2 - np.mean(theta_vector2)) / np.std(theta_vector2) if np.std(theta_vector2) > 0 else theta_vector2
+        phi_vector2 = (phi_vector2 - np.mean(phi_vector2)) / np.std(phi_vector2) if np.std(phi_vector2) > 0 else phi_vector2
+        omega_theta_vector2 = (omega_theta_vector2 - np.mean(omega_theta_vector2)) / np.std(omega_theta_vector2) if np.std(omega_theta_vector2) > 0 else omega_theta_vector2
+        omega_phi_vector2 = (omega_phi_vector2 - np.mean(omega_phi_vector2)) / np.std(omega_phi_vector2) if np.std(omega_phi_vector2) > 0 else omega_phi_vector2
     
     
     # 只计算存在数据的向量
@@ -209,6 +221,30 @@ def calculate_angles_and_velocities(tracks_3d, dt):
 
     return angles, velocities
 
+def filter_and_normalize_tracks(tracks_3d, window_length=11, polyorder=3):
+    """对每个球的x, y, z序列进行Savitzky-Golay滤波和归一化"""
+    filtered_tracks = {}
+    for cname, points in tracks_3d.items():
+        if not points:
+            continue
+        xs, ys, zs = zip(*points)
+        xs = np.array(xs)
+        ys = np.array(ys)
+        zs = np.array(zs)
+        # 滤波
+        if len(xs) >= window_length:
+            xs_f = savgol_filter(xs, window_length, polyorder)
+            ys_f = savgol_filter(ys, window_length, polyorder)
+            zs_f = savgol_filter(zs, window_length, polyorder)
+        else:
+            xs_f, ys_f, zs_f = xs, ys, zs
+        # 归一化
+        xs_f = (xs_f - np.mean(xs_f)) / np.std(xs_f) if np.std(xs_f) > 0 else xs_f
+        ys_f = (ys_f - np.mean(ys_f)) / np.std(ys_f) if np.std(ys_f) > 0 else ys_f
+        zs_f = (zs_f - np.mean(zs_f)) / np.std(zs_f) if np.std(zs_f) > 0 else zs_f
+        filtered_tracks[cname] = list(zip(xs_f, ys_f, zs_f))
+    return filtered_tracks
+
 if __name__ == "__main__":
     track_dir = ".\\traces"
     tracks1 = load_ball_tracks(track_dir, 1)
@@ -216,6 +252,8 @@ if __name__ == "__main__":
 
     # 合并两个轨迹
     tracks_3d = merge_3d_tracks(tracks1, tracks2)
+
+    filtered_tracks_3d = filter_and_normalize_tracks(tracks_3d, window_length=19, polyorder=6)
     
     # 插值处理
     # interpolated_tracks_3d = interpolate_data(tracks_3d, new_sampling_rate=10)  # 将采样率提高10倍
