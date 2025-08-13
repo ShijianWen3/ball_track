@@ -42,7 +42,7 @@ def cam_reader(cam_id, frame_queue, thread_running_event:threading.Event):
 
 if __name__ == "__main__":
 
-    modle_path = "ballv1.2.pt"
+    modle_path = "ball.pt"
 
     print("🚀 RGB球追踪模型测试-双摄像头同步")
     print("=" * 50)
@@ -64,7 +64,7 @@ if __name__ == "__main__":
         isPrintInfo = False
 
     # 启动摄像头线程
-    t0 = threading.Thread(target=cam_reader, args=(1, frame_queue_0, thread_running_event), daemon=True)
+    t0 = threading.Thread(target=cam_reader, args=(0, frame_queue_0, thread_running_event), daemon=True)
     t1 = threading.Thread(target=cam_reader, args=(2, frame_queue_1, thread_running_event), daemon=True)
     t0.start()
     t1.start()
