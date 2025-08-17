@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 
 # 初始化摄像头
-cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture(1)
 
 # 设置窗口大小
 frame_width = 640

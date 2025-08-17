@@ -246,7 +246,7 @@ def filter_and_normalize_tracks(tracks_3d, window_length=11, polyorder=3):
     return filtered_tracks
 
 if __name__ == "__main__":
-    track_dir = ".\\traces"
+    track_dir = ".\\traces_13_8"
     tracks1 = load_ball_tracks(track_dir, 1)
     tracks2 = load_ball_tracks(track_dir, 2)
 

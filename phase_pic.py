@@ -173,7 +173,7 @@ def calculate_angles_and_velocities(tracks_3d, dt, normalize=True):
 
 
 if __name__ == "__main__":
-    track_dir = ".\\traces"
+    track_dir = ".\\traces_13_8"
     tracks1 = load_ball_tracks(track_dir, 1)
     tracks2 = load_ball_tracks(track_dir, 2)
     # 合并两个轨迹
@@ -185,7 +185,8 @@ if __name__ == "__main__":
     # processed_tracks_3d = filtered_tracks_3d
     # 计算角度和角速度（含归一化）
     angles, velocities = calculate_angles_and_velocities(processed_tracks_3d, dt=1/600, normalize=True)
-    for cname in ["red_ball", "green_ball", "blue_ball"]:
+    # for cname in ["red_ball", "green_ball", "blue_ball"]:
+    for cname in ["green_ball", "blue_ball"]:
         plot_phase_space_interpolated(angles, velocities, cname)
         plot_delay_embedding_interpolated(angles, cname, tau=5, m=10)
         plot_poincare_section_interpolated(angles, velocities, cname)

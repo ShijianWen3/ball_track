@@ -1,0 +1,21 @@
+{
+  "device_mapping": {
+    "opencv_0_640x480": {
+      "opencv_index": 0,
+      "logical_name": "front",
+      "resolution": "640x480",
+      "fps": 30.0
+    },
+    "opencv_2_640x480": {
+      "opencv_index": 2,
+      "logical_name": "side",
+      "resolution": "640x480",
+      "fps": 30.0
+    }
+  },
+  "logical_mapping": {
+    "front": "opencv_0_640x480",
+    "side": "opencv_2_640x480"
+  },
+  "version": "1.0"
+}
