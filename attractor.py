@@ -13,8 +13,8 @@ class TriplePendulumSystem:
         
         self.d1 = 0.8 * self.L1
         self.d1p = 0.2 * self.L1
-        self.d2 = 0.684491397 * self.L2
-        self.d2p = 0.315508633 * self.L2
+        self.d2 = 0.682537465 * self.L2
+        self.d2p = 0.317462535 * self.L2
         self.l3 = self.L3 / 2
         
         rho = 0.115394883
@@ -39,8 +39,8 @@ class TriplePendulumSystem:
         self.g = 9.81
         
         # 惯性矩
-        self.Ipar1 = (1/8) * self.mr1 * (self.Ro**2 + self.Ri**2)
-        self.Iperp1 = (1/4) * self.mr1 * (self.Ro**2 + self.Ri**2) + (1/12) * self.mr1 * self.L1**2
+        self.Ipar1 = (1/8) * self.mr1 * (self.Ro**2 + self.Ri**2) + self.m * self.d1**2
+        self.Iperp1 = (1/4) * self.mr1 * (self.Ro**2 + self.Ri**2) + (1/12) * self.mr1 * self.L1**2 + self.m * self.d1**2
         self.Ipar2 = (1/8) * self.mr2 * (self.Ro**2 + self.Ri**2)
         self.Iperp2 = (1/4) * self.mr2 * (self.Ro**2 + self.Ri**2) + (1/12) * self.mr2 * self.L2**2
         self.Ipar3 = (1/8) * self.mr3 * (self.Ro**2 + self.Ri**2)
@@ -324,7 +324,7 @@ if __name__ == "__main__":
     # 1. 首先找到最佳参数
     # print("\n1. 参数扫描...")
     # best_m = plot_parameter_scan()
-    best_m = 0.5
+    best_m = 0.3
     
     # 2. 使用最佳参数绘制吸引子
     print(f"\n2. 使用最佳参数 m={best_m:.3f} 绘制吸引子...")
