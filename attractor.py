@@ -30,9 +30,12 @@ class TriplePendulumSystem:
         # self.b1 = 5e-3  # 增加阻尼
         # self.b2 = 5e-3
         # self.b3 = 5e-3
-        self.b1 = 5e-5  # 增加阻尼
-        self.b2 = 5e-5
-        self.b3 = 5e-5
+        # self.b1 = 5e-5  # 增加阻尼
+        # self.b2 = 5e-5
+        # self.b3 = 5e-5
+        self.b1 = 3e-3  # 增加阻尼
+        self.b2 = 3e-3
+        self.b3 = 3e-3
         
         self.Ro = 3e-3
         self.Ri = 2e-3
@@ -93,19 +96,10 @@ class TriplePendulumSystem:
         return sol.t, sol.y.T
     
     def to_cartesian_coords(self, traj):
-        """将角度坐标转换为笛卡尔坐标以更好显示吸引子"""
+        """直接返回角度和角速度，不做正余弦变换"""
         theta1, phi2, phi3 = traj[:, 0], traj[:, 1], traj[:, 2]
         dtheta1, dphi2, dphi3 = traj[:, 3], traj[:, 4], traj[:, 5]
-        
-        # 使用复数表示来避免角度包装问题
-        x1 = np.cos(theta1)
-        y1 = np.sin(theta1) 
-        x2 = np.cos(phi2)
-        y2 = np.sin(phi2)
-        x3 = np.cos(phi3)
-        y3 = np.sin(phi3)
-        
-        return np.column_stack([x1, y1, x2, y2, x3, y3, dtheta1, dphi2, dphi3])
+        return np.column_stack([theta1, phi2, phi3, dtheta1, dphi2, dphi3])
     
     def find_poincare_section(self, trajectory, section_var=0, section_value=0, direction='positive'):
         """改进的Poincaré截面"""
@@ -128,13 +122,18 @@ def plot_enhanced_attractors():
     system = TriplePendulumSystem()
     
     # 选择更好的初始条件以产生混沌行为
+    # initial_conditions_list = [
+    #     [0.5, 0.3, 0.2, 0.1, -0.1, 0.05],    # 轻微偏离平衡
+    #     [1.2, -0.8, 0.6, -0.2, 0.3, -0.1],   # 中等幅度
+    #     [2.1, 1.5, -1.2, 0.5, -0.4, 0.2],    # 大幅度运动
+    #     [0.8, -0.4, 1.8, -0.3, 0.6, -0.3]    # 混合初态
+    # ]
     initial_conditions_list = [
-        [0.5, 0.3, 0.2, 0.1, -0.1, 0.05],    # 轻微偏离平衡
-        [1.2, -0.8, 0.6, -0.2, 0.3, -0.1],   # 中等幅度
-        [2.1, 1.5, -1.2, 0.5, -0.4, 0.2],    # 大幅度运动
-        [0.8, -0.4, 1.8, -0.3, 0.6, -0.3]    # 混合初态
+       
+        [0.8, -0.4, 1.8, -0.3, 0.6, -0.3],
+        [2.0, 0, 0, 0, 0, 0]
+        
     ]
-    
     colors = ['red', 'blue', 'green', 'purple']
     
     # 更长的仿真时间和更高精度
@@ -142,72 +141,53 @@ def plot_enhanced_attractors():
     # transient_time = 50  # 丢弃瞬态
     transient_time = 10  # 丢弃瞬态
     
-    fig = plt.figure(figsize=(16, 12))
+    fig1 = plt.figure(figsize=(16, 12))
     
-    # 1. 笛卡尔坐标下的相空间 (cos(θ1), sin(θ1))
+    # 1. θ₁ 相空间轨迹（直接用角度）
     plt.subplot(2, 4, 1)
     for i, initial_cond in enumerate(initial_conditions_list):
         t, traj = system.simulate(initial_cond, sim_time, dt=0.02)
-        # 去除瞬态
         start_idx = int(transient_time / 0.02)
-        cart_coords = system.to_cartesian_coords(traj[start_idx:])
-        plt.plot(cart_coords[:, 0], cart_coords[:, 1], color=colors[i], 
+        plt.plot(traj[start_idx:, 0], traj[start_idx:, 1], color=colors[i], 
                 alpha=0.7, linewidth=0.5, markersize=0.1)
-    plt.xlabel('cos(θ₁)')
-    plt.ylabel('sin(θ₁)')
-    plt.title('θ₁ 在单位圆上的轨迹')
-    plt.axis('equal')
+    plt.xlabel('θ₁ (rad)')
+    plt.ylabel('φ₂ (rad)')
+    plt.title('θ₁-φ₂ 相图')
     plt.grid(True, alpha=0.3)
     
-    # 2. 混合坐标 (cos(θ1), dθ1/dt)
+    # 2. θ₁ vs dθ₁/dt
     plt.subplot(2, 4, 2)
     for i, initial_cond in enumerate(initial_conditions_list):
         t, traj = system.simulate(initial_cond, sim_time, dt=0.02)
         start_idx = int(transient_time / 0.02)
-        plt.plot(np.cos(traj[start_idx:, 0]), traj[start_idx:, 3], 
+        plt.plot(traj[start_idx:, 0], traj[start_idx:, 3], 
                 color=colors[i], alpha=0.7, linewidth=0.5)
-    plt.xlabel('cos(θ₁)')
+    plt.xlabel('θ₁ (rad)')
     plt.ylabel('dθ₁/dt (rad/s)')
-    plt.title('混合坐标相图')
+    plt.title('θ₁-角速度 相图')
     plt.grid(True, alpha=0.3)
     
-    # 3. 高维投影 (cos(φ2), sin(φ2))
+    # 3. φ₂ vs φ₃
     plt.subplot(2, 4, 3)
     for i, initial_cond in enumerate(initial_conditions_list):
         t, traj = system.simulate(initial_cond, sim_time, dt=0.02)
         start_idx = int(transient_time / 0.02)
-        cart_coords = system.to_cartesian_coords(traj[start_idx:])
-        plt.plot(cart_coords[:, 2], cart_coords[:, 3], color=colors[i], 
+        plt.plot(traj[start_idx:, 1], traj[start_idx:, 2], color=colors[i], 
                 alpha=0.7, linewidth=0.5)
-    plt.xlabel('cos(φ₂)')
-    plt.ylabel('sin(φ₂)')
-    plt.title('φ₂ 在单位圆上的轨迹')
-    plt.axis('equal')
+    plt.xlabel('φ₂ (rad)')
+    plt.ylabel('φ₃ (rad)')
+    plt.title('φ₂-φ₃ 相图')
     plt.grid(True, alpha=0.3)
-    
-    # 4. 3D投影 - 真正的吸引子结构
-    ax = fig.add_subplot(2, 4, 4, projection='3d')
-    for i, initial_cond in enumerate(initial_conditions_list):
-        t, traj = system.simulate(initial_cond, sim_time, dt=0.02)
-        start_idx = int(transient_time / 0.02)
-        ax.plot(np.cos(traj[start_idx:, 0]), np.cos(traj[start_idx:, 1]), 
-               traj[start_idx:, 3], color=colors[i], alpha=0.6, linewidth=0.5)
-    ax.set_xlabel('cos(θ₁)')
-    ax.set_ylabel('cos(φ₂)')
-    ax.set_zlabel('dθ₁/dt')
-    ax.set_title('3D 吸引子')
-    
-    # 5. 高质量Poincaré截面
+
+    # 5. 高质量Poincaré截面（直接用角度）
     plt.subplot(2, 4, 5)
     for i, initial_cond in enumerate(initial_conditions_list):
-        t, traj = system.simulate(initial_cond, 300, dt=0.01)  # 更长时间，更高精度
-        # θ1=0的正向穿越
+        t, traj = system.simulate(initial_cond, 300, dt=0.01)
         crossings = system.find_poincare_section(traj, section_var=0, section_value=0, direction='positive')
-        if len(crossings) > 20:  # 确保有足够多的点
-            poincare_points = traj[crossings[10:], :]  # 跳过更多瞬态点
-            plt.scatter(np.cos(poincare_points[:, 1]), poincare_points[:, 4], 
-                       color=colors[i], alpha=0.8, s=1)
-    plt.xlabel('cos(φ₂)')
+        if len(crossings) > 20:
+            poincare_points = traj[crossings[10:], :]
+            plt.scatter(poincare_points[:, 1], poincare_points[:, 4], color=colors[i], alpha=0.8, s=1)
+    plt.xlabel('φ₂ (rad)')
     plt.ylabel('dφ₂/dt (rad/s)')
     plt.title('Poincaré截面 (θ₁=0, 上升)')
     plt.grid(True, alpha=0.3)
@@ -257,6 +237,52 @@ def plot_enhanced_attractors():
     plt.grid(True, alpha=0.3)
     
     plt.tight_layout()
+    
+    fig2 = plt.figure(figsize=(16, 12))
+
+    # 4. 3D投影 - 角度空间
+    ax = fig2.add_subplot(1, 4, 1, projection='3d')
+    for i, initial_cond in enumerate(initial_conditions_list):
+        t, traj = system.simulate(initial_cond, sim_time, dt=0.02)
+        start_idx = int(transient_time / 0.02)
+        ax.plot(traj[start_idx:, 0], traj[start_idx:, 1], traj[start_idx:, 2], color=colors[i], alpha=0.6, linewidth=0.5)
+    ax.set_xlabel('θ₁ (rad)')
+    ax.set_ylabel('φ₂ (rad)')
+    ax.set_zlabel('φ₃ (rad)')
+    ax.set_title('3D-θ₁-φ₂-φ₃')
+
+    ax = fig2.add_subplot(1, 4, 2, projection='3d')
+    for i, initial_cond in enumerate(initial_conditions_list):
+        t, traj = system.simulate(initial_cond, sim_time, dt=0.02)
+        start_idx = int(transient_time / 0.02)
+        ax.plot(traj[start_idx:, 3], traj[start_idx:, 4], traj[start_idx:, 5], color=colors[i], alpha=0.6, linewidth=0.5)
+    ax.set_xlabel('dθ₁/dt (rad/s)')
+    ax.set_ylabel('dφ₂/dt (rad/s)')
+    ax.set_zlabel('dφ₃/dt (rad/s)')
+    ax.set_title('3D-w1-w2-w3')
+
+    ax = fig2.add_subplot(1, 4, 3, projection='3d')
+    for i, initial_cond in enumerate(initial_conditions_list):  
+        t, traj = system.simulate(initial_cond, sim_time, dt=0.02)
+        start_idx = int(transient_time / 0.02)
+        ax.plot(traj[start_idx:, 0], traj[start_idx:, 1], traj[start_idx:, 3], color=colors[i], alpha=0.6, linewidth=0.5)
+    ax.set_xlabel('θ₁ (rad)')
+    ax.set_ylabel('φ₂ (rad)')
+    ax.set_zlabel('dθ₁/dt (rad/s)')
+    ax.set_title('3D-θ₁-φ₂-dθ₁/dt')
+
+    ax = fig2.add_subplot(1, 4, 4, projection='3d')
+    for i, initial_cond in enumerate(initial_conditions_list):
+        t, traj = system.simulate(initial_cond, sim_time, dt=0.02)
+        start_idx = int(transient_time / 0.02)
+        ax.plot(traj[start_idx:, 2], traj[start_idx:, 4], traj[start_idx:, 5], color=colors[i], alpha=0.6, linewidth=0.5)
+    ax.set_xlabel('φ₃ (rad)')
+    ax.set_ylabel('dφ₂/dt (rad/s)')
+    ax.set_zlabel('dφ₃/dt (rad/s)')
+    ax.set_title('3D-φ₃-dφ₂/dt-dφ₃/dt')
+    plt.tight_layout()
+
+    
     plt.show()
 
 def plot_parameter_scan():
