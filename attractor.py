@@ -130,8 +130,8 @@ def plot_enhanced_attractors():
     # ]
     initial_conditions_list = [
        
-        [0.8, -0.4, 1.8, -0.3, 0.6, -0.3],
-        [2.0, 0, 0, 0, 0, 0]
+        # [0.8, -0.4, 1.8, -0.3, 0.6, -0.3],
+        [0.8, -0.4, 1.8, 0, 0, 0]
         
     ]
     colors = ['red', 'blue', 'green', 'purple']
