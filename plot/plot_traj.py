@@ -55,7 +55,7 @@ def plot_single_ball_3d(points, cname):
     plt.title(f"3D Trajectory: {cname}")
 
 if __name__ == "__main__":
-    track_dir = ".\\traces_13_8"
+    track_dir = ".\\traces"
     tracks1 = load_ball_tracks(track_dir,1)
     tracks2 = load_ball_tracks(track_dir,2)
     plot_ball_tracks(tracks1, 1)

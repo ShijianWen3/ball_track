@@ -37,14 +37,133 @@ class TriplePendulumSystem:
         self.Ri = 2e-3
         self.g = 9.81
         
-        # 惯性矩
-        self.Ipar1 = (1/8) * self.mr1 * (self.Ro**2 + self.Ri**2) + self.m * self.d1**2
-        self.Iperp1 = (1/4) * self.mr1 * (self.Ro**2 + self.Ri**2) + (1/12) * self.mr1 * self.L1**2 + self.m * self.d1**2
-        self.Ipar2 = (1/8) * self.mr2 * (self.Ro**2 + self.Ri**2)
-        self.Iperp2 = (1/4) * self.mr2 * (self.Ro**2 + self.Ri**2) + (1/12) * self.mr2 * self.L2**2
-        self.Ipar3 = (1/8) * self.mr3 * (self.Ro**2 + self.Ri**2)
-        self.Iperp3 = (1/4) * self.mr3 * (self.Ro**2 + self.Ri**2) + (1/12) * self.mr3 * self.L3**2
+        # 转动惯量
+        self._compute_inertias()
+        
+        # 预计算重力系数
+        self._compute_gravity_coefficients()
+       
     
+    def _compute_inertias(self):
+        """计算转动惯量"""
+        # 平行轴转动惯量
+        self.Ipar1 = (1/8) * self.mr1 * (self.Ro**2 + self.Ri**2) + self.m * self.d1**2
+        self.Ipar2 = (1/8) * self.mr2 * (self.Ro**2 + self.Ri**2)
+        self.Ipar3 = (1/8) * self.mr3 * (self.Ro**2 + self.Ri**2)
+        
+        # 垂直轴转动惯量
+        self.Iperp1 = (1/4) * self.mr1 * (self.Ro**2 + self.Ri**2) + (1/12) * self.mr1 * self.L1**2 + self.m * self.d1**2
+        self.Iperp2 = (1/4) * self.mr2 * (self.Ro**2 + self.Ri**2) + (1/12) * self.mr2 * self.L2**2
+        self.Iperp3 = (1/4) * self.mr3 * (self.Ro**2 + self.Ri**2) + (1/12) * self.mr3 * self.L3**2
+        
+    def _compute_gravity_coefficients(self):
+        """预计算重力势能的系数"""
+        self.K = (self.m * (-self.d1 + 3*self.d1p) + 
+                  self.mr1 * (-self.d1 + self.d1p)/2 + 
+                  self.mr2 * self.d1p + 
+                  self.mr3 * self.d1p + 
+                  2 * self.mB * self.d1p)
+        
+        self.L_coeff = (self.m * (-self.d2 + 2*self.d2p) + 
+                        self.mr2 * (-self.d2 + self.d2p)/2 + 
+                        self.mr3 * self.d2p + 
+                        self.mB * self.d2p)
+    
+    def mass_matrix(self, q):
+        """计算质量矩阵 M(q)"""
+        theta1, phi2, phi3 = q
+        
+        # 基于MATLAB代码中的动能表达式构建质量矩阵
+        M = np.zeros((3, 3))
+        
+        # M11: θ1的平方项系数
+        M[0,0] = (self.mr1 * ((self.d1-self.d1p)/2)**2 + 
+                  self.mr2 * (self.d1**2 + ((self.d2-self.d2p)/2)**2) +
+                  self.mr3 * (self.d1p**2 + self.d2p**2) +
+                  self.mB * (self.d1p**2 + self.d2p**2 + 1 + self.d2**2) +
+                  self.m * self.d1**2 +  # 集中质量1贡献
+                  self.Iperp1 + self.Iperp2 + self.Iperp3)
+        
+        # M22: φ2的平方项系数
+        M[1,1] = (self.mr2 * ((self.d2-self.d2p)/2)**2 +
+                  self.mB * self.d2**2 +
+                  self.m * self.d2**2 +  # 集中质量2贡献
+                  self.Ipar1 + self.Iperp2 + self.Iperp3)
+        
+        # M33: φ3的平方项系数  
+        M[2,2] = self.Iperp2 + self.Iperp3
+        
+        # 耦合项 M12, M13, M23（考虑非线性耦合）
+        cos_phi2 = np.cos(phi2)
+        sin_phi2 = np.sin(phi2)
+        sin_theta1 = np.sin(theta1)
+        cos_theta1 = np.cos(theta1)
+        
+        # M12 = M21: θ1和φ2的耦合
+        M[0,1] = M[1,0] = 0.5 * self.m * self.L3**2
+        
+        # M13 = M31: θ1和φ3的耦合
+        M[0,2] = M[2,0] = (self.Iperp2 * cos_phi2 + 
+                           (self.Ipar2 - self.Iperp2) * cos_phi2)
+        
+        # M23 = M32: φ2和φ3的耦合
+        M[1,2] = M[2,1] = (-2 * self.Iperp2 * sin_theta1 * cos_theta1 * sin_phi2)
+        
+        return M
+    
+    def coriolis_vector(self, q, dq):
+        """计算科氏力向量 C(q,dq)"""
+        theta1, phi2, phi3 = q
+        dtheta1, dphi2, dphi3 = dq
+        
+        C = np.zeros(3)
+        
+        # 基于克氏符号的严格计算（简化版本，保留主要非线性项）
+        sin_phi2 = np.sin(phi2)
+        cos_phi2 = np.cos(phi2)
+        sin_theta1 = np.sin(theta1)
+        cos_theta1 = np.cos(theta1)
+        
+        # C1: θ1方程的科氏力项
+        C[0] = (self.Iperp2 * (-sin_phi2) * dphi2 * dtheta1 +
+                2 * self.Iperp2 * sin_phi2 * dphi2 * dphi3 * cos_theta1 * sin_theta1 -
+                self.Iperp2 * sin_phi2 * dphi2 * dphi3)
+        
+        # C2: φ2方程的科氏力项
+        C[1] = (0.5 * self.Iperp2 * sin_phi2 * dtheta1**2 +
+                self.Iperp2 * (cos_theta1**2 - sin_theta1**2) * sin_phi2 * dphi3**2 +
+                2 * self.Iperp2 * cos_theta1 * sin_theta1 * cos_phi2 * dtheta1 * dphi3)
+        
+        # C3: φ3方程的科氏力项  
+        C[2] = (-self.Iperp2 * sin_phi2 * dphi2 * dtheta1 -
+                2 * self.Iperp2 * cos_theta1 * sin_theta1 * cos_phi2 * dphi2 * dtheta1 +
+                2 * self.Iperp2 * cos_theta1 * sin_theta1 * sin_phi2 * dphi2**2)
+        
+        return C
+    
+    def gravity_vector(self, q):
+        """计算重力向量 G(q)"""
+        theta1, phi2, phi3 = q
+        
+        G = np.zeros(3)
+        
+        # 基于势能V = g*(K*cos(theta1) + L*sin(theta1)*cos(phi2))的梯度
+        sin_theta1 = np.sin(theta1)
+        cos_theta1 = np.cos(theta1)
+        sin_phi2 = np.sin(phi2)
+        cos_phi2 = np.cos(phi2)
+        
+        # dV/dtheta1
+        G[0] = self.g * (-self.K * sin_theta1 + self.L_coeff * cos_theta1 * cos_phi2)
+        
+        # dV/dphi2  
+        G[1] = self.g * (-self.L_coeff * sin_theta1 * sin_phi2)
+        
+        # dV/dphi3 = 0 (势能中无φ3项)
+        G[2] = 0
+        
+        return G
+
     def wrap_angle(self, angle):
         """将角度包装到 [-π, π] 范围"""
         return ((angle + np.pi) % (2 * np.pi)) - np.pi
@@ -84,10 +203,50 @@ class TriplePendulumSystem:
         
         return np.array([dtheta1, dphi2, dphi3, ddtheta1, ddphi2, ddphi3])
     
+    def equations_of_motion_model(self, t, state):
+        """严格的拉格朗日运动方程"""
+        q = state[:3]  # [theta1, phi2, phi3]
+        dq = state[3:]  # [dtheta1, dphi2, dphi3]
+        
+        # 计算各项
+        M = self.mass_matrix(q)
+        C = self.coriolis_vector(q, dq)
+        G = self.gravity_vector(q)
+        
+        # 阻尼力
+        tau_damping = -np.diag([self.b1, self.b2, self.b3]) @ dq
+
+        # 增强耦合项
+        coupling = np.zeros(3)
+        coupling[0] = 0.2 * np.sin(q[2] - q[0]) * dq[2] * dq[0]  # θ₁-φ₃耦合
+        coupling[1] = 0.3 * np.sin(q[2] - q[1]) * dq[2] * dq[1]  # φ₂-φ₃耦合
+        coupling[2] = 0.4 * np.sin(q[0] - q[2]) * dq[0]**2 + 0.3 * np.sin(q[1] - q[2]) * dq[1]**2  # φ₃受θ₁、φ₂影响
+        
+
+        # 求解 M * ddq = -C - G + tau + coupling
+        try:
+            ddq = np.linalg.solve(M, -C - G + tau_damping + coupling)
+        except np.linalg.LinAlgError:
+            ddq = np.linalg.pinv(M) @ (-C - G + tau_damping + coupling)
+
+        # # 求解 M * ddq = -C - G + tau
+        # try:
+        #     ddq = np.linalg.solve(M, -C - G + tau_damping)
+        # except np.linalg.LinAlgError:
+        #     # 如果矩阵奇异，使用伪逆
+        #     ddq = np.linalg.pinv(M) @ (-C - G + tau_damping)
+        
+        
+        
+        return np.concatenate([dq, ddq]) 
+
+    
     def simulate(self, initial_conditions, t_span, dt=0.01):
         """高精度仿真"""
         t_eval = np.arange(0, t_span, dt)
-        sol = solve_ivp(self.equations_of_motion, [0, t_span], initial_conditions, 
+        # sol = solve_ivp(self.equations_of_motion, [0, t_span], initial_conditions, 
+        #                t_eval=t_eval, method='DOP853', rtol=1e-10, atol=1e-12)
+        sol = solve_ivp(self.equations_of_motion_model, [0, t_span], initial_conditions, 
                        t_eval=t_eval, method='DOP853', rtol=1e-10, atol=1e-12)
         return sol.t, sol.y.T
     
@@ -125,7 +284,7 @@ def plot_enhanced_attractors():
     
     # 更长的仿真时间和更高精度
     sim_time = 200  # 增加仿真时间
-    transient_time = 120  # 丢弃瞬态
+    transient_time = 150  # 丢弃瞬态
     
     # fig1 = plt.figure(figsize=(16, 12))
     
