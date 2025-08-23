@@ -507,7 +507,7 @@ def update_ball_tracks(tracks_dict, detections):
 
 if __name__ == "__main__":
     # 如果直接运行，使用默认参数进行测试
-    model_path = "ball.pt"
+    model_path = "./yolo/ball.pt"
     
     print("🚀 RGB球追踪模型测试 - GPU加速版")
     print("=" * 50)
