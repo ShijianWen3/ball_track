@@ -41,10 +41,10 @@ def merge_3d_tracks(tracks1, tracks2):
         tracks_3d[cname] = points_3d
     return tracks_3d
 
-def plot_single_ball_3d(points, cname):
+def plot_single_ball_3d(points, cname, fig):
     color_map = {"red_ball": "r", "green_ball": "g", "blue_ball": "b"}
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
+    location = 1 if cname == "red_ball" else (2 if cname == "green_ball" else 3)
+    ax = fig.add_subplot(1, 3, location, projection='3d')
     if points:
         xs, ys, zs = zip(*points)
         ax.scatter(xs, ys, zs, c=color_map.get(cname, "k"), label=cname)
@@ -54,17 +54,22 @@ def plot_single_ball_3d(points, cname):
     plt.legend()
     plt.title(f"3D Trajectory: {cname}")
 
+def plot_ball_3d(tracks_3d):
+    fig = plt.figure(figsize=(16, 12))
+    
+    for cname in ["red_ball", "green_ball", "blue_ball"]:
+        plot_single_ball_3d(tracks_3d[cname], cname, fig)
+
 if __name__ == "__main__":
-    track_dir = ".\\traces"
+    track_dir = ".\\traces_big"
     tracks1 = load_ball_tracks(track_dir,1)
     tracks2 = load_ball_tracks(track_dir,2)
     plot_ball_tracks(tracks1, 1)
     plot_ball_tracks(tracks2, 2)
     
     tracks_3d = merge_3d_tracks(tracks1, tracks2)
-    print(tracks_3d)
-    for cname in ["red_ball", "green_ball", "blue_ball"]:
-        plot_single_ball_3d(tracks_3d[cname], cname)
+
+    plot_ball_3d(tracks_3d)
 
     plt.show()
     
