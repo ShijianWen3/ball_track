@@ -244,10 +244,12 @@ class TriplePendulumSystem:
     def simulate(self, initial_conditions, t_span, dt=0.01):
         """高精度仿真"""
         t_eval = np.arange(0, t_span, dt)
-        # sol = solve_ivp(self.equations_of_motion, [0, t_span], initial_conditions, 
-        #                t_eval=t_eval, method='DOP853', rtol=1e-10, atol=1e-12)
-        sol = solve_ivp(self.equations_of_motion_model, [0, t_span], initial_conditions, 
+        #使用自己的耦合方程
+        sol = solve_ivp(self.equations_of_motion, [0, t_span], initial_conditions, 
                        t_eval=t_eval, method='DOP853', rtol=1e-10, atol=1e-12)
+        #使用严格的拉格朗日方程
+        # sol = solve_ivp(self.equations_of_motion_model, [0, t_span], initial_conditions, 
+        #                t_eval=t_eval, method='DOP853', rtol=1e-10, atol=1e-12)
         return sol.t, sol.y.T
     
     def to_cartesian_coords(self, traj):
@@ -284,7 +286,7 @@ def plot_enhanced_attractors():
     
     # 更长的仿真时间和更高精度
     sim_time = 200  # 增加仿真时间
-    transient_time = 150  # 丢弃瞬态
+    transient_time = 120  # 丢弃瞬态
     
     # fig1 = plt.figure(figsize=(16, 12))
     

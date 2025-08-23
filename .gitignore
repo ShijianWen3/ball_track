@@ -9,6 +9,8 @@ model_ballv1.0/
 traces/
 traces_13_8/
 traces_12_8/
+traces_big/
+traces_tiny/
 yolo/*.zip
 yolo/*.txt
 !CMakeLists.txt
