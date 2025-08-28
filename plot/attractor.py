@@ -279,10 +279,10 @@ def plot_enhanced_attractors():
     system = TriplePendulumSystem()
     initial_conditions_list = [
        
-        [0.8, -0.4, 1.8, 0, 0, 0]
+        [1.0, -0.4, 1.8, 0, 0, 0]
         
     ]
-    colors = ['red', 'blue', 'green', 'purple']
+    colors = [ 'red','blue', 'green', 'purple']
     
     # 更长的仿真时间和更高精度
     sim_time = 200  # 增加仿真时间
@@ -546,6 +546,30 @@ def plot_enhanced_attractors():
     plt.ylabel('dφ₃/dt (rad/s)')
     plt.title('φ₃-dφ₃/dt')
     plt.grid(True, alpha=0.3)
+
+
+    # plt.subplot(1, 3, 2)
+    # for i, initial_cond in enumerate(initial_conditions_list):
+    #     t, traj = system.simulate(initial_cond, sim_time, dt=0.02)
+    #     start_idx = int(transient_time / 0.02)
+    #     plt.plot(traj[start_idx:, 2], traj[start_idx:, 5], 
+    #             color=colors[i], alpha=0.7, linewidth=0.5)
+    # plt.xlabel('φ₂ (rad)')
+    # plt.ylabel('dφ₂/dt (rad/s)')
+    # plt.title('φ₂-dφ₂/dt')
+    # plt.grid(True, alpha=0.3)
+    
+    # # 3. φ₂ vs φ₃
+    # plt.subplot(1, 3, 3)
+    # for i, initial_cond in enumerate(initial_conditions_list):
+    #     t, traj = system.simulate(initial_cond, sim_time, dt=0.02)
+    #     start_idx = int(transient_time / 0.02)
+    #     plt.plot(traj[start_idx:, 1], traj[start_idx:, 4], color=colors[i], 
+    #             alpha=0.7, linewidth=0.5)
+    # plt.xlabel('φ₃ (rad)')
+    # plt.ylabel('dφ₃/dt (rad/s)')
+    # plt.title('φ₃-dφ₃/dt')
+    # plt.grid(True, alpha=0.3)
     
     plt.show()
 

@@ -5,6 +5,10 @@ from plot_traj import load_ball_tracks, merge_3d_tracks
 import numpy as np
 from scipy.signal import savgol_filter
 
+Width = 640
+Height = 480
+
+
 def interpolate_data(tracks_3d, new_sampling_rate=10):
     """对数据进行插值处理，提高采样率"""
     interpolated_tracks = {}
@@ -139,7 +143,7 @@ def central_diff(x, dt):
     dx[-1] = (x[-1] - x[-2]) / dt
     return dx
 
-def calculate_angles_and_velocities(tracks_3d, dt, normalize:bool=True):
+def calculate_angles_and_velocities(tracks_3d, dt, normalize:bool=True, L1=0.68, L2=0.32):
     """计算三维轨迹对应的角度和角速度"""
     angles = {}
     velocities = {}
@@ -172,9 +176,19 @@ def calculate_angles_and_velocities(tracks_3d, dt, normalize:bool=True):
     xb, yb, zb = zip(*blue_track)
     xr, yr, zr = zip(*red_track)
 
-    xm = (np.array(xb) + np.array(xg))/2
-    ym = (np.array(yb) + np.array(yg))/2
-    zm = (np.array(zb) + np.array(zg))/2
+    xo, yo, zo = Width / 2, Height / 2, 0  # 假设观察点在图像中心，z=0平面
+
+    xm1 = (np.array(xb) + np.array(xg))/2
+    ym1 = (np.array(yb) + np.array(yg))/2
+    zm1 = (np.array(zb) + np.array(zg))/2
+
+    xm2 = (L1* np.array(xr) + L2* np.array(xm1))/(L1+L2)
+    ym2 = (L1* np.array(yr) + L2* np.array(ym1))/(L1+L2)
+    zm2 = (L1* np.array(zr) + L2* np.array(zm1))/(L1+L2) 
+
+
+
+    
 
 
     # 绿球指向蓝球的向量
@@ -182,9 +196,13 @@ def calculate_angles_and_velocities(tracks_3d, dt, normalize:bool=True):
     ys1 = np.array(yb) - np.array(yg)
     zs1 = np.array(zb) - np.array(zg)
 
-    xs2 = np.array(xm) - np.array(xr)
-    ys2 = np.array(ym) - np.array(yr)
-    zs2 = np.array(zm) - np.array(zr)
+    xs2 = np.array(xm1) - np.array(xr)
+    ys2 = np.array(ym1) - np.array(yr)
+    zs2 = np.array(zm1) - np.array(zr)
+
+    xs3 = np.array(xm2) - xo
+    ys3 = np.array(ym2) - yo
+    zs3 = np.array(zm2) - zo
     
     # 计算连线向量的角度
     phi_vector1 = np.arctan2(ys1, xs1)  # 连线向量的方位角
@@ -246,7 +264,7 @@ def filter_and_normalize_tracks(tracks_3d, window_length=11, polyorder=3):
     return filtered_tracks
 
 if __name__ == "__main__":
-    track_dir = ".\\traces_13_8"
+    track_dir = ".\\traces_tiny"
     tracks1 = load_ball_tracks(track_dir, 1)
     tracks2 = load_ball_tracks(track_dir, 2)
 
@@ -260,7 +278,7 @@ if __name__ == "__main__":
     interpolated_tracks_3d = tracks_3d
     
     # 绘制插值后的相空间图和其他可视化
-    angles, velocities = calculate_angles_and_velocities(interpolated_tracks_3d, dt=1/60)  # 采样率为60Hz
+    angles, velocities = calculate_angles_and_velocities(interpolated_tracks_3d, dt=1/60,normalize=False)  # 采样率为60Hz
     
     # 只处理实际存在的数据
     available_names = list(angles.keys())

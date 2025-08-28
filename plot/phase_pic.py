@@ -173,7 +173,7 @@ def calculate_angles_and_velocities(tracks_3d, dt, normalize=True):
 
 
 if __name__ == "__main__":
-    track_dir = ".\\traces_13_8"
+    track_dir = ".\\traces_tiny"
     tracks1 = load_ball_tracks(track_dir, 1)
     tracks2 = load_ball_tracks(track_dir, 2)
     # 合并两个轨迹

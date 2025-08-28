@@ -61,7 +61,7 @@ def plot_ball_3d(tracks_3d):
         plot_single_ball_3d(tracks_3d[cname], cname, fig)
 
 if __name__ == "__main__":
-    track_dir = ".\\traces_big"
+    track_dir = ".\\traces_tiny"
     tracks1 = load_ball_tracks(track_dir,1)
     tracks2 = load_ball_tracks(track_dir,2)
     plot_ball_tracks(tracks1, 1)
