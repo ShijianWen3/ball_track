@@ -98,7 +98,7 @@ def main():
 				ax.scatter(xs, ys, zs, c=color_map.get(cname, "k"), edgecolors='k', linewidths=1.5, marker='o', label=f"{cname}当前")
 	ax.set_xlabel('X')
 	ax.set_ylabel('Y')
-	# 兼容性问题，移除z轴标签设置
+	ax.set_zlabel('Z')
 	ax.legend()
 	ax.set_title("3D Ball Point Cloud (实时)")
 	plt.tight_layout()
