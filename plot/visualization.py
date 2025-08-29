@@ -85,17 +85,9 @@ def main():
 	def update_plot():
 		ax.clear()
 		for cname, points in tracks_3d.items():
-			if len(points) > 1:
+			if len(points) > 0:
 				xs, ys, zs = zip(*points)
-				# 绘制历史轨迹线
-				ax.plot(xs, ys, zs, color=color_map.get(cname, "k"), linewidth=2, alpha=0.7, label=f"{cname}轨迹")
-				# 历史点用小点
-				ax.scatter(xs[:-1], ys[:-1], zs[:-1], c=color_map.get(cname, "k"), alpha=0.5)
-				# 当前点用大点
-				ax.scatter(xs[-1], ys[-1], zs[-1], c=color_map.get(cname, "k"), edgecolors='k', linewidths=1.5, marker='o', label=f"{cname}当前")
-			elif len(points) == 1:
-				xs, ys, zs = points[0]
-				ax.scatter(xs, ys, zs, c=color_map.get(cname, "k"), edgecolors='k', linewidths=1.5, marker='o', label=f"{cname}当前")
+				ax.scatter(xs, ys, zs, c=color_map.get(cname, "k"), alpha=0.8, label=cname)
 	ax.set_xlabel('X')
 	ax.set_ylabel('Y')
 	ax.set_zlabel('Z')
