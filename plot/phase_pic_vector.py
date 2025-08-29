@@ -203,39 +203,74 @@ def calculate_angles_and_velocities(tracks_3d, dt, normalize:bool=True, L1=0.68,
     xs3 = np.array(xm2) - xo
     ys3 = np.array(ym2) - yo
     zs3 = np.array(zm2) - zo
-    
-    # 计算连线向量的角度
-    phi_vector1 = np.arctan2(ys1, xs1)  # 连线向量的方位角
-    theta_vector1 = np.arctan2(zs1, np.sqrt(xs1**2 + ys1**2))  # 连线向量的俯仰角
-    # 计算连线向量的角速度
-    omega_phi_vector1 = central_diff(phi_vector1, dt)
-    omega_theta_vector1 = central_diff(theta_vector1, dt)
 
-    if normalize:
-        theta_vector1 = (theta_vector1 - np.mean(theta_vector1)) / np.std(theta_vector1) if np.std(theta_vector1) > 0 else theta_vector1
-        phi_vector1 = (phi_vector1 - np.mean(phi_vector1)) / np.std(phi_vector1) if np.std(phi_vector1) > 0 else phi_vector1
-        omega_theta_vector1 = (omega_theta_vector1 - np.mean(omega_theta_vector1)) / np.std(omega_theta_vector1) if np.std(omega_theta_vector1) > 0 else omega_theta_vector1
-        omega_phi_vector1 = (omega_phi_vector1 - np.mean(omega_phi_vector1)) / np.std(omega_phi_vector1) if np.std(omega_phi_vector1) > 0 else omega_phi_vector1  
 
-    # 计算连线向量的角度
-    phi_vector2 = np.arctan2(ys2, xs2)  # 连线向量的方位角
-    theta_vector2 = np.arctan2(zs2, np.sqrt(xs2**2 + ys2**2))  # 连线向量的俯仰角
-    omega_phi_vector2 = central_diff(phi_vector2, dt)
-    omega_theta_vector2 = central_diff(theta_vector2, dt)
+    #计算theta1
+    vo = np.array([0, 1, 0])  # 观察点指向y轴正方向的单位向量
 
-    if normalize:
-        theta_vector2 = (theta_vector2 - np.mean(theta_vector2)) / np.std(theta_vector2) if np.std(theta_vector2) > 0 else theta_vector2
-        phi_vector2 = (phi_vector2 - np.mean(phi_vector2)) / np.std(phi_vector2) if np.std(phi_vector2) > 0 else phi_vector2
-        omega_theta_vector2 = (omega_theta_vector2 - np.mean(omega_theta_vector2)) / np.std(omega_theta_vector2) if np.std(omega_theta_vector2) > 0 else omega_theta_vector2
-        omega_phi_vector2 = (omega_phi_vector2 - np.mean(omega_phi_vector2)) / np.std(omega_phi_vector2) if np.std(omega_phi_vector2) > 0 else omega_phi_vector2
+    s3 = np.stack([xs3, ys3, zs3], axis=1)
+    s3_abs = np.linalg.norm(s3, axis=1, keepdims=True)
+    s3_unit = s3 / s3_abs  # 归一化
+    vo_abs = np.linalg.norm(vo)
+    vo_unit = vo / vo_abs  # 归一化
+
+    cos_angles = np.clip(np.dot(s3_unit, vo_unit), -1.0, 1.0)
+    theta1 = np.arccos(cos_angles)  # shape: (N,)
+    omega_theta1 = central_diff(theta1, dt)
     
+    #计算phi2
     
+    s2 = np.stack([xs2, ys2, zs2], axis=1)  # (N, 3)
+    s3 = np.stack([xs3, ys3, zs3], axis=1)  # (N, 3)
+    s3_norm = s3 / np.linalg.norm(s3, axis=1, keepdims=True)
+    dot = np.sum(s2 * s3_norm, axis=1, keepdims=True)
+    s2_proj = s2 - dot * s3_norm
+    ref = s2_proj[0]
+    ref = ref / np.linalg.norm(ref)
+    s2_proj_norm = s2_proj / np.linalg.norm(s2_proj, axis=1, keepdims=True)
+    cos_phi = np.clip(np.dot(s2_proj_norm, ref), -1.0, 1.0)
+    phi2 = np.arccos(cos_phi)
+    sign = np.sign(np.sum(np.cross(ref, s2_proj_norm) * s3_norm, axis=1))
+    phi2 = phi2 * sign
+    omega_phi2 = central_diff(phi2, dt)
+
+
+    #计算phi3
+    # 组装向量
+    s1 = np.stack([xs1, ys1, zs1], axis=1)  # (N, 3)
+    s2 = np.stack([xs2, ys2, zs2], axis=1)  # (N, 3)
+
+    # 单位化s1
+    s1_norm = s1 / np.linalg.norm(s1, axis=1, keepdims=True)
+    # s2在s1方向上的分量
+    dot = np.sum(s2 * s1_norm, axis=1, keepdims=True)
+    # s2在垂直于s1的平面上的投影
+    s2_proj = s2 - dot * s1_norm
+
+    # 选定参考方向（如第一帧的投影）
+    ref = s2_proj[0]
+    ref = ref / np.linalg.norm(ref)
+
+    # 计算每一帧投影与参考方向的夹角
+    s2_proj_norm = s2_proj / np.linalg.norm(s2_proj, axis=1, keepdims=True)
+    cos_phi = np.clip(np.dot(s2_proj_norm, ref), -1.0, 1.0)
+    phi3 = np.arccos(cos_phi)
+    sign = np.sign(np.sum(np.cross(ref, s2_proj_norm) * s1_norm, axis=1))
+    phi3 = phi3 * sign
+    omega_phi3 = central_diff(phi3, dt)
+
+
     # 只计算存在数据的向量
-    angles["v1"] = (theta_vector1, phi_vector1)
-    velocities["v1"] = (omega_theta_vector1, omega_phi_vector1)
+    angles["theta1"] = theta1
+    velocities["theta1"] = omega_theta1
 
-    angles["v2"] = (theta_vector2, phi_vector2)
-    velocities["v2"] = (omega_theta_vector2, omega_phi_vector2)
+    angles["phi2"] = phi2
+    velocities["phi2"] = omega_phi2
+
+    angles["phi3"] = phi3
+    velocities["phi3"] = omega_phi3
+
+
 
     return angles, velocities
 
@@ -263,6 +298,26 @@ def filter_and_normalize_tracks(tracks_3d, window_length=11, polyorder=3):
         filtered_tracks[cname] = list(zip(xs_f, ys_f, zs_f))
     return filtered_tracks
 
+def plot_all_phase_spaces(angles, velocities, names):
+    """
+    绘制三组变量的相空间图（角度-角速度），三幅子图在一个figure中。
+    angles, velocities: dict，key为变量名，value为(θ, φ)或(ω_θ, ω_φ)
+    names: 长度为3的变量名列表，如['v1', 'v2', 'v3']
+    """
+    import matplotlib.pyplot as plt
+    fig, axs = plt.subplots(1, 3, figsize=(18, 5))
+    for i, name in enumerate(names):
+        if name not in angles or name not in velocities:
+            axs[i].set_title(f"{name} 不存在")
+            continue
+        theta = angles[name]
+        omega_theta = velocities[name]
+        axs[i].plot(theta, omega_theta, '.', markersize=1)
+        axs[i].set_xlabel('θ (Angle)')
+        axs[i].set_ylabel('ω_θ (Angular Velocity)')
+        axs[i].set_title(f"Phase Space: {name}")
+    plt.tight_layout()
+
 if __name__ == "__main__":
     track_dir = ".\\traces_tiny"
     tracks1 = load_ball_tracks(track_dir, 1)
@@ -280,14 +335,7 @@ if __name__ == "__main__":
     # 绘制插值后的相空间图和其他可视化
     angles, velocities = calculate_angles_and_velocities(interpolated_tracks_3d, dt=1/60,normalize=False)  # 采样率为60Hz
     
-    # 只处理实际存在的数据
-    available_names = list(angles.keys())
-    print(f"可用的向量数据: {available_names}")
-    
-    for cname in available_names:
-        print(f"正在绘制 {cname} 的图形...")
-        plot_phase_space_interpolated(angles, velocities, cname)
-        plot_delay_embedding_interpolated(angles, cname, tau=1, m=10)
-        plot_poincare_section_interpolated(angles, velocities, cname)
+    plot_all_phase_spaces(angles, velocities, ['theta1', 'phi2', 'phi3'])
+
     
     plt.show()
