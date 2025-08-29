@@ -75,9 +75,9 @@ def main():
 	print("按 s 开始/暂停追踪，按 q 退出")
 	tracking = False
 
-	# 初始化3D绘图
+	# 初始化3D点云绘图
 	plt.ion()
-	fig = plt.figure()
+	fig = plt.figure("3D Ball Point Cloud", figsize=(7, 6))
 	ax = fig.add_subplot(111, projection='3d')
 	color_map = {"red_ball": "r", "green_ball": "g", "blue_ball": "b"}
 
@@ -86,14 +86,17 @@ def main():
 		for cname, points in tracks_3d.items():
 			if points:
 				xs, ys, zs = zip(*points)
-				ax.plot(xs, ys, zs, marker="o", color=color_map.get(cname, "k"), label=cname)
+				ax.scatter(xs, ys, zs, c=color_map.get(cname, "k"), label=cname)
 		ax.set_xlabel('X')
 		ax.set_ylabel('Y')
 		ax.set_zlabel('Z')
 		ax.legend()
-		ax.set_title("3D Ball Trajectories (实时)")
+		ax.set_title("3D Ball Point Cloud (实时)")
+		plt.tight_layout()
 		plt.draw()
 		plt.pause(0.001)
+
+	plt.show(block=False)
 
 	try:
 		while True:

@@ -329,8 +329,8 @@ if __name__ == "__main__":
     filtered_tracks_3d = filter_and_normalize_tracks(tracks_3d, window_length=19, polyorder=6)
     
     # 插值处理
-    # interpolated_tracks_3d = interpolate_data(tracks_3d, new_sampling_rate=10)  # 将采样率提高10倍
-    interpolated_tracks_3d = tracks_3d
+    interpolated_tracks_3d = interpolate_data(filtered_tracks_3d, new_sampling_rate=10)  # 将采样率提高10倍
+    # interpolated_tracks_3d = tracks_3d
     
     # 绘制插值后的相空间图和其他可视化
     angles, velocities = calculate_angles_and_velocities(interpolated_tracks_3d, dt=1/60,normalize=False)  # 采样率为60Hz

@@ -279,10 +279,10 @@ def plot_enhanced_attractors():
     system = TriplePendulumSystem()
     initial_conditions_list = [
        
-        [1.0, -0.4, 1.8, 0, 0, 0]
+        [0.8, -0.4, 1.8, 0, 0, 0]
         
     ]
-    colors = [ 'red','blue', 'green', 'purple']
+    colors = ['red','blue','green','purple']
     
     # 更长的仿真时间和更高精度
     sim_time = 200  # 增加仿真时间
@@ -633,27 +633,15 @@ def plot_parameter_scan():
     return m_values[best_idx]
 
 if __name__ == "__main__":
-    print("=== 三自由度摆球系统混沌吸引子分析 ===")
+    print("=== 六自由度摆球系统混沌吸引子分析 ===")
     
-    # 1. 首先找到最佳参数
-    # print("\n1. 参数扫描...")
-    # best_m = plot_parameter_scan()
+    
     best_m = 0.3
     
     # 2. 使用最佳参数绘制吸引子
-    print(f"\n2. 使用最佳参数 m={best_m:.3f} 绘制吸引子...")
+    print(f"\n绘制吸引子...")
     system = TriplePendulumSystem()
     system.m = best_m
     plot_enhanced_attractors()
     
-    print("\n=== 图像解读 ===")
-    print("1. 前三图：使用cos/sin变换避免角度包装问题")
-    print("2. 3D图：真正的吸引子几何结构")  
-    print("3. Poincaré截面：吸引子的精细分形结构")
-    print("4. 时间序列：非周期混沌行为")
-    print("5. 功率谱：连续谱表明混沌特性")
-    print("6. 轨道分离：指数发散证明混沌敏感性")
-    print("\n如果吸引子仍不明显，尝试：")
-    print("- 调整initial_conditions_list中的初值")  
-    print("- 增加sim_time（仿真时间）")
-    print("- 减小阻尼系数b1,b2,b3")
+  
