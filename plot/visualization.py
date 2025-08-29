@@ -70,7 +70,8 @@ def main():
 	tracker0 = RGBBallTracker(MODEL_PATH)
 	tracker1 = RGBBallTracker(MODEL_PATH)
 
-	# 轨迹记录
+	# 轨迹记录，缓冲区长度
+	TRAJ_BUF_LEN = 200
 	tracks_3d = {"red_ball": [], "green_ball": [], "blue_ball": []}
 	print("按 s 开始/暂停追踪，按 q 退出")
 	tracking = False
@@ -84,17 +85,25 @@ def main():
 	def update_plot():
 		ax.clear()
 		for cname, points in tracks_3d.items():
-			if points:
+			if len(points) > 1:
 				xs, ys, zs = zip(*points)
-				ax.scatter(xs, ys, zs, c=color_map.get(cname, "k"), label=cname)
-		ax.set_xlabel('X')
-		ax.set_ylabel('Y')
-		ax.set_zlabel('Z')
-		ax.legend()
-		ax.set_title("3D Ball Point Cloud (实时)")
-		plt.tight_layout()
-		plt.draw()
-		plt.pause(0.001)
+				# 绘制历史轨迹线
+				ax.plot(xs, ys, zs, color=color_map.get(cname, "k"), linewidth=2, alpha=0.7, label=f"{cname}轨迹")
+				# 历史点用小点
+				ax.scatter(xs[:-1], ys[:-1], zs[:-1], c=color_map.get(cname, "k"), alpha=0.5)
+				# 当前点用大点
+				ax.scatter(xs[-1], ys[-1], zs[-1], c=color_map.get(cname, "k"), edgecolors='k', linewidths=1.5, marker='o', label=f"{cname}当前")
+			elif len(points) == 1:
+				xs, ys, zs = points[0]
+				ax.scatter(xs, ys, zs, c=color_map.get(cname, "k"), edgecolors='k', linewidths=1.5, marker='o', label=f"{cname}当前")
+	ax.set_xlabel('X')
+	ax.set_ylabel('Y')
+	# 兼容性问题，移除z轴标签设置
+	ax.legend()
+	ax.set_title("3D Ball Point Cloud (实时)")
+	plt.tight_layout()
+	plt.draw()
+	plt.pause(0.001)
 
 	plt.show(block=False)
 
@@ -113,7 +122,7 @@ def main():
 				d3 = merge_3d_tracks_frame(det0, det1)
 				for cname, pt in d3.items():
 					tracks_3d[cname].append(pt)
-					if len(tracks_3d[cname]) > 200:
+					if len(tracks_3d[cname]) > TRAJ_BUF_LEN:
 						tracks_3d[cname].pop(0)
 
 			# 显示摄像头画面
