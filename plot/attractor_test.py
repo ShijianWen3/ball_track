@@ -85,12 +85,12 @@ class ChaoticAttractors:
         ax.legend()
         return fig, ax
     
-    def plot_2d_attractor(self, trajectory, title, color='blue', alpha=0.7):
+    def plot_2d_attractor(self, trajectory, title, color='blue', alpha=0.9):
         """绘制2D吸引子"""
         fig, ax = plt.subplots(figsize=(10, 8))
         
         x, y = trajectory[:2]
-        ax.plot(x, y, color=color, alpha=alpha, linewidth=0.5)
+        ax.plot(x, y, color=color, alpha=alpha, linewidth=2)
         ax.scatter(x[0], y[0], color='red', s=50, label='起始点')
         
         ax.set_xlabel('X')
@@ -145,7 +145,7 @@ def generate_all_attractors():
     ca.t_span = (0, 100)  # 杜芬振子需要更长时间
     ca.t_eval = np.arange(0, 100, ca.dt)
     duffing_traj = ca.solve_system(ca.duffing_system, [1, 0])
-    fig5, _ = ca.plot_2d_attractor(duffing_traj, '杜芬振子 (混沌)', 'orange')
+    fig5, _ = ca.plot_2d_attractor(duffing_traj, '杜芬振子 (混沌)', 'red')
     
     # 6. 相图对比
     print("生成相图对比...")
@@ -156,7 +156,7 @@ def generate_all_attractors():
     
     # 洛伦兹相图 (x-y)
     lorenz_traj = ca.solve_system(ca.lorenz_system, [1, 1, 1])
-    axes[0,0].plot(lorenz_traj[0], lorenz_traj[1], 'b-', alpha=0.7, linewidth=0.5)
+    axes[0,0].plot(lorenz_traj[0], lorenz_traj[1], 'b-', alpha=0.7, linewidth=3)
     axes[0,0].set_title('洛伦兹 X-Y 相图')
     axes[0,0].set_xlabel('X')
     axes[0,0].set_ylabel('Y')
