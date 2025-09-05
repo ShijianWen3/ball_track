@@ -1,9 +1,11 @@
+
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.interpolate import CubicSpline
 from plot_traj import load_ball_tracks, merge_3d_tracks
 import numpy as np
 from scipy.signal import savgol_filter
+from itertools import combinations
 
 Width = 640
 Height = 480
@@ -312,6 +314,51 @@ def plot_all_phase_spaces(angles, velocities, names):
         axs[i].set_title(f"Phase Space: {name}")
     plt.tight_layout()
 
+
+def plot_all_3d_phase_spaces(angles, velocities):
+    """
+    绘制angles和velocities中三个角度和三个角速度的20种三元组三维相图。
+    顺序、轴标注与attractor_model.py的plot_enhanced_attractors一致。
+    """
+    
+
+    # 变量名和标签，顺序与仿真一致
+    var_names = [r'$\\theta_1$', r'$\\varphi_2$', r'$\\varphi_3$', r'$d\\theta_1/dt$', r'$d\\varphi_2/dt$', r'$d\\varphi_3/dt$']
+    var_labels = ['θ₁ (rad)', 'φ₂ (rad)', 'φ₃ (rad)', 'dθ₁/dt (rad/s)', 'dφ₂/dt (rad/s)', 'dφ₃/dt (rad/s)']
+    # angles/velocities的顺序
+    angle_keys = ['theta1', 'phi2', 'phi3']
+    vel_keys = ['theta1', 'phi2', 'phi3']
+    # 组装数据
+    data = [angles.get('theta1', None), angles.get('phi2', None), angles.get('phi3', None),
+            velocities.get('theta1', None), velocities.get('phi2', None), velocities.get('phi3', None)]
+    # 组合
+    n_vars = 6
+    combs = list(combinations(range(n_vars), 3))  # 20种三元组
+    # 颜色
+    color = '#FF6F61'  # 柔和橙红色
+    fig_list = []
+    for fig_idx in range(5):
+        fig = plt.figure(figsize=(14, 10))
+        fig_list.append(fig)
+        for sub_idx in range(4):
+            comb_idx = fig_idx * 4 + sub_idx
+            if comb_idx >= len(combs):
+                break
+            i, j, k = combs[comb_idx]
+            ax = fig.add_subplot(2, 2, sub_idx+1, projection='3d')
+            # 检查数据有效性
+            if data[i] is None or data[j] is None or data[k] is None:
+                ax.set_title('数据缺失')
+                continue
+            N = min(len(data[i]), len(data[j]), len(data[k]))
+            ax.plot(data[i][:N], data[j][:N], data[k][:N], color=color, alpha=0.95, linewidth=0.8)
+            ax.set_xlabel(var_labels[i])
+            ax.set_ylabel(var_labels[j])
+            ax.set_zlabel(var_labels[k])
+            ax.set_title(f'3D-{var_labels[i]}-{var_labels[j]}-{var_labels[k]}')
+        fig.suptitle(f'fig2_{fig_idx+1}: 6D-3D({fig_idx*4+1}-{min((fig_idx+1)*4,20)})', fontsize=16)
+        fig.tight_layout(rect=(0, 0.03, 1, 0.95))
+
 if __name__ == "__main__":
     track_dir = ".\\traces_tiny"
     tracks1 = load_ball_tracks(track_dir, 1)
@@ -328,6 +375,8 @@ if __name__ == "__main__":
     angles, velocities = calculate_angles_and_velocities(interpolated_tracks_3d, dt=1/60,normalize=False)  # 采样率为60Hz
     
     plot_all_phase_spaces(angles, velocities, ['theta1', 'phi2', 'phi3'])
+
+    plot_all_3d_phase_spaces(angles, velocities)
 
     
     plt.show()
