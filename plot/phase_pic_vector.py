@@ -218,45 +218,39 @@ def calculate_angles_and_velocities(tracks_3d, dt, normalize:bool=True, L1=0.68,
     theta1 = np.arccos(cos_angles)  # shape: (N,)
     omega_theta1 = central_diff(theta1, dt)
     
-    #计算phi2
-    
+    # 计算phi2：首帧为0，后续为相邻帧s2夹角累加
     s2 = np.stack([xs2, ys2, zs2], axis=1)  # (N, 3)
-    s3 = np.stack([xs3, ys3, zs3], axis=1)  # (N, 3)
-    s3_norm = s3 / np.linalg.norm(s3, axis=1, keepdims=True)
-    dot = np.sum(s2 * s3_norm, axis=1, keepdims=True)
-    s2_proj = s2 - dot * s3_norm
-    ref = s2_proj[0]
-    ref = ref / np.linalg.norm(ref)
-    s2_proj_norm = s2_proj / np.linalg.norm(s2_proj, axis=1, keepdims=True)
-    cos_phi = np.clip(np.dot(s2_proj_norm, ref), -1.0, 1.0)
-    phi2 = np.arccos(cos_phi)
-    sign = np.sign(np.sum(np.cross(ref, s2_proj_norm) * s3_norm, axis=1))
-    phi2 = phi2 * sign
+    N = s2.shape[0]
+    phi2 = np.zeros(N)
+    for i in range(1, N):
+        v1 = s2[i-1] / np.linalg.norm(s2[i-1])
+        v2 = s2[i] / np.linalg.norm(s2[i])
+        cos_angle = np.clip(np.dot(v1, v2), -1.0, 1.0)
+        angle = np.arccos(cos_angle)
+        # 判断方向，使用叉乘与s3方向判断正负
+        s3_dir = np.array([xs3[i], ys3[i], zs3[i]])
+        s3_dir = s3_dir / np.linalg.norm(s3_dir)
+        cross = np.cross(v1, v2)
+        sign = np.sign(np.dot(cross, s3_dir))
+        phi2[i] = phi2[i-1] + angle * sign
     omega_phi2 = central_diff(phi2, dt)
 
 
-    #计算phi3
-    # 组装向量
-    s1 = np.stack([xs1, ys1, zs1], axis=1)  # (N, 3)
-    s2 = np.stack([xs2, ys2, zs2], axis=1)  # (N, 3)
-
-    # 单位化s1
-    s1_norm = s1 / np.linalg.norm(s1, axis=1, keepdims=True)
-    # s2在s1方向上的分量
-    dot = np.sum(s2 * s1_norm, axis=1, keepdims=True)
-    # s2在垂直于s1的平面上的投影
-    s2_proj = s2 - dot * s1_norm
-
-    # 选定参考方向（如第一帧的投影）
-    ref = s2_proj[0]
-    ref = ref / np.linalg.norm(ref)
-
-    # 计算每一帧投影与参考方向的夹角
-    s2_proj_norm = s2_proj / np.linalg.norm(s2_proj, axis=1, keepdims=True)
-    cos_phi = np.clip(np.dot(s2_proj_norm, ref), -1.0, 1.0)
-    phi3 = np.arccos(cos_phi)
-    sign = np.sign(np.sum(np.cross(ref, s2_proj_norm) * s1_norm, axis=1))
-    phi3 = phi3 * sign
+    # 计算phi3：首帧为0，后续为相邻帧s3夹角累加，带方向
+    s3 = np.stack([xs3, ys3, zs3], axis=1)  # (N, 3)
+    N = s3.shape[0]
+    phi3 = np.zeros(N)
+    for i in range(1, N):
+        v1 = s3[i-1] / np.linalg.norm(s3[i-1])
+        v2 = s3[i] / np.linalg.norm(s3[i])
+        cos_angle = np.clip(np.dot(v1, v2), -1.0, 1.0)
+        angle = np.arccos(cos_angle)
+        # 判断方向，使用叉乘与s1方向判断正负
+        s1_dir = np.array([xs1[i], ys1[i], zs1[i]])
+        s1_dir = s1_dir / np.linalg.norm(s1_dir)
+        cross = np.cross(v1, v2)
+        sign = np.sign(np.dot(cross, s1_dir))
+        phi3[i] = phi3[i-1] + angle * sign
     omega_phi3 = central_diff(phi3, dt)
 
 
