@@ -25,7 +25,7 @@ class VideoRecorder:
         self.record_start_time = None
         
         # 视频保存设置
-        self.output_dir = "captured_videos"
+        self.output_dir = "../captured_videos"
         self.current_filename = None
         
         # 创建输出目录

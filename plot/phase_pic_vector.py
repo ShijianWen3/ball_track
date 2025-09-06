@@ -372,7 +372,7 @@ if __name__ == "__main__":
     interpolated_tracks_3d = interpolate_data(tracks_3d, new_sampling_rate=10)  # 将采样率提高10倍
     
     # 绘制插值后的相空间图和其他可视化
-    angles, velocities = calculate_angles_and_velocities(interpolated_tracks_3d, dt=1/60,normalize=False)  # 采样率为60Hz
+    angles, velocities = calculate_angles_and_velocities(filtered_tracks_3d, dt=1/60,normalize=False)  # 采样率为60Hz
     
     plot_all_phase_spaces(angles, velocities, ['theta1', 'phi2', 'phi3'])
 
